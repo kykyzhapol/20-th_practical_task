@@ -1,3 +1,6 @@
+import random
+
+
 class Circle:
     # Атрибуты класса
     pi = 3.1415
@@ -33,6 +36,97 @@ class NavalBattle:
         """Игрок получает свой символ (например, 'X' или 'A') для отметки попаданий."""
         self.player_symbol = player_symbol
 
+    @classmethod
+    def new_game(cls):
+        """Очищает поле и случайным образом расставляет корабли."""
+        # Очищаем поле
+        cls.playing_field = [[0 for _ in range(10)] for _ in range(10)]
+
+        # Список кораблей: (размер, количество)
+        ships = [(4, 1), (3, 2), (2, 3), (1, 4)]
+
+        # Функция проверки возможности размещения корабля
+        def can_place(size, row, col, direction):
+            # direction: 0 – горизонталь, 1 – вертикаль
+            cells = []
+            if direction == 0:  # горизонтально
+                if col + size > 10:
+                    return False
+                for c in range(col, col + size):
+                    cells.append((row, c))
+            else:  # вертикально
+                if row + size > 10:
+                    return False
+                for r in range(row, row + size):
+                    cells.append((r, col))
+
+            # Проверяем каждую клетку корабля и её соседей
+            for r, c in cells:
+                # Сама клетка должна быть 0
+                if cls.playing_field[r][c] != 0:
+                    return False
+                # Проверяем всех соседей (включая диагонали)
+                for dr in (-1, 0, 1):
+                    for dc in (-1, 0, 1):
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < 10 and 0 <= nc < 10:
+                            if cls.playing_field[nr][nc] != 0:
+                                return False
+            return True
+
+        # Размещаем корабли
+        for size, count in ships:
+            for _ in range(count):
+                placed = False
+                for attempt in range(1000):  # максимум попыток
+                    row = random.randint(0, 9)
+                    col = random.randint(0, 9)
+                    direction = random.randint(0, 1)
+                    if can_place(size, row, col, direction):
+                        # Размещаем корабль
+                        if direction == 0:
+                            for c in range(col, col + size):
+                                cls.playing_field[row][c] = 1
+                        else:
+                            for r in range(row, row + size):
+                                cls.playing_field[r][col] = 1
+                        placed = True
+                        break
+                if not placed:
+                    raise RuntimeError("Не удалось расставить корабли, попробуйте снова.")
+
+    def shot(self, x, y):
+        """
+        Выстрел по координатам (x, y), где x и y от 1 до 10.
+        Выводит результат: 'попал', 'мимо', 'ошибка' или 'игровое поле не заполнено'.
+        """
+        # Проверяем, расставлены ли корабли (есть ли хотя бы одна 1)
+        has_ships = any(1 in row for row in NavalBattle.playing_field)
+        if not has_ships:
+            print("игровое поле не заполнено")
+            return
+
+        # Преобразуем координаты в индексы (0..9)
+        j, i = x - 1, y - 1
+        if not (0 <= i < 10 and 0 <= j < 10):
+            print("Координаты вне поля (допустимы 1..10)")
+            return
+
+        cell = NavalBattle.playing_field[i][j]
+
+        # Проверяем, не стреляли ли уже в эту клетку
+        if cell not in (0, 1):
+            print("ошибка")
+            return
+
+        if cell == 1:
+            print("попал")
+            NavalBattle.playing_field[i][j] = self.player_symbol
+        else:  # cell == 0
+            print("мимо")
+            NavalBattle.playing_field[i][j] = 'o'
+
+
     @staticmethod
     def show():
         """Статический метод: выводит текущее состояние поля на экран."""
@@ -49,31 +143,70 @@ class NavalBattle:
                     line.append(cell)
             print(' '.join(line))  # можно выводить без пробелов, но так нагляднее
 
-    def shot(self, x, y):
+
+import re
+
+class RomanNumber:
+    # Словарь для преобразования римских цифр в арабские
+    roman_dict = {
+        'I': 1,
+        'V': 5,
+        'X': 10,
+        'L': 50,
+        'C': 100,
+        'D': 500,
+        'M': 1000
+    }
+
+    def __init__(self, rom_value):
         """
-        Выстрел по координатам (x, y), где x и y от 1 до 10.
-        Выводит "попал" или "мимо" и обновляет поле.
+        Инициализация римским числом.
+        rom_value: строка с римским числом.
+        Если строка не является корректным римским числом, выводится 'ошибка'
+        и атрибут rom_value устанавливается в None.
         """
-        # Преобразуем координаты в индексы списка (0..9)
-        j, i = x - 1, y - 1
-
-        # Проверка границ (на случай некорректного ввода)
-        if not (0 <= i < 10 and 0 <= j < 10):
-            print("Координаты вне поля (1..10)")
-            return
-
-        cell = NavalBattle.playing_field[i][j]
-
-        if cell == 1:
-            # Попадание по кораблю
-            print("попал")
-            NavalBattle.playing_field[i][j] = self.player_symbol
+        if self.is_roman(rom_value):
+            self.rom_value = rom_value.upper()
         else:
-            # Мимо: либо пусто (0), либо уже подбито/промах
-            print("мимо")
-            if cell == 0:
-                NavalBattle.playing_field[i][j] = 'o'
-            # Если клетка уже содержит символ игрока или 'o' – ничего не меняем
+            print('ошибка')
+            self.rom_value = None
 
+    def decimal_number(self):
+        """
+        Возвращает десятичный (арабский) эквивалент римского числа.
+        Если rom_value равен None, возвращает None.
+        """
+        if self.rom_value is None:
+            return None
 
+        total = 0
+        prev_value = 0
+        # Проходим по строке справа налево
+        for char in reversed(self.rom_value):
+            current_value = self.roman_dict[char]
+            if current_value < prev_value:
+                total -= current_value
+            else:
+                total += current_value
+            prev_value = current_value
+        return total
 
+    @staticmethod
+    def is_roman(value):
+        """
+        Статический метод. Возвращает True, если строка value является
+        корректным римским числом (1..3999), иначе False.
+        """
+        if not isinstance(value, str) or not value:
+            return False
+        # Регулярное выражение для проверки римских чисел
+        pattern = r'^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$'
+        return bool(re.fullmatch(pattern, value.upper()))
+
+    def __str__(self):
+        """Строковое представление: возвращает rom_value или 'None'."""
+        return str(self.rom_value) if self.rom_value is not None else 'None'
+
+    def __repr__(self):
+        """Представление для разработчика."""
+        return self.rom_value if self.rom_value is not None else "None"
