@@ -158,38 +158,86 @@ class RomanNumber:
         'M': 1000
     }
 
-    def __init__(self, rom_value):
+    def __init__(self, value):
         """
-        Инициализация римским числом.
-        rom_value: строка с римским числом.
-        Если строка не является корректным римским числом, выводится 'ошибка'
-        и атрибут rom_value устанавливается в None.
+        Инициализация:
+        - если value — строка с корректным римским числом, сохраняем в rom_value,
+          int_value вычисляем через decimal_number()
+        - если value — целое число от 1 до 3999, сохраняем в int_value,
+          rom_value вычисляем через roman_number()
+        - иначе выводим 'ошибка', соответствующий атрибут (rom_value или int_value) = None
         """
-        if self.is_roman(rom_value):
-            self.rom_value = rom_value.upper()
+        if isinstance(value, str) and self.is_roman(value):
+            self.rom_value = value.upper()
+            self.int_value = self.decimal_number()  # вычисляем из римской строки
+        elif isinstance(value, int) and self.is_int(value):
+            self.int_value = value
+            self.rom_value = self.roman_number()    # вычисляем римскую строку из числа
         else:
             print('ошибка')
             self.rom_value = None
+            self.int_value = None
 
     def decimal_number(self):
         """
-        Возвращает десятичный (арабский) эквивалент римского числа.
-        Если rom_value равен None, возвращает None.
+        Возвращает десятичный эквивалент:
+        - если объект создан из римского числа, возвращает int
+        - если создан из целого числа, возвращает это число
+        - если ошибка, возвращает None
         """
-        if self.rom_value is None:
-            return None
+        if hasattr(self, 'int_value') and self.int_value is not None:
+            return self.int_value
+        if hasattr(self, 'rom_value') and self.rom_value is not None:
+            total = 0
+            prev_value = 0
+            for char in reversed(self.rom_value):
+                current_value = self.roman_dict[char]
+                if current_value < prev_value:
+                    total -= current_value
+                else:
+                    total += current_value
+                prev_value = current_value
+            return total
+        return None
 
-        total = 0
-        prev_value = 0
-        # Проходим по строке справа налево
-        for char in reversed(self.rom_value):
-            current_value = self.roman_dict[char]
-            if current_value < prev_value:
-                total -= current_value
-            else:
-                total += current_value
-            prev_value = current_value
-        return total
+    def roman_number(self):
+        """
+        Возвращает римскую строку:
+        - если объект создан из целого числа, возвращает строку
+        - если создан из римского числа, возвращает эту строку
+        - если ошибка, возвращает None
+        """
+        if hasattr(self, 'rom_value') and self.rom_value is not None:
+            return self.rom_value
+        if hasattr(self, 'int_value') and self.int_value is not None:
+            num = self.int_value
+            if num < 1 or num > 3999:
+                return None
+            values = [
+                (1000, 'M'), (900, 'CM'), (500, 'D'), (400, 'CD'),
+                (100, 'C'), (90, 'XC'), (50, 'L'), (40, 'XL'),
+                (10, 'X'), (9, 'IX'), (5, 'V'), (4, 'IV'),
+                (1, 'I')
+            ]
+            result = []
+            for val, sym in values:
+                while num >= val:
+                    result.append(sym)
+                    num -= val
+            return ''.join(result)
+        return None
+
+    @staticmethod
+    def is_int(value):
+        """
+        Статический метод. Возвращает True, если целое число value
+        можно представить римским числом (1..3999), иначе False.
+        """
+        try:
+            num = int(value)
+        except (ValueError, TypeError):
+            return False
+        return 1 <= num <= 3999
 
     @staticmethod
     def is_roman(value):
@@ -199,14 +247,21 @@ class RomanNumber:
         """
         if not isinstance(value, str) or not value:
             return False
-        # Регулярное выражение для проверки римских чисел
         pattern = r'^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$'
         return bool(re.fullmatch(pattern, value.upper()))
 
     def __str__(self):
-        """Строковое представление: возвращает rom_value или 'None'."""
-        return str(self.rom_value) if self.rom_value is not None else 'None'
+        """Строковое представление: возвращает rom_value или int_value в виде строки, иначе 'None'."""
+        if self.rom_value is not None:
+            return self.rom_value
+        if self.int_value is not None:
+            return str(self.int_value)
+        return 'None'
 
     def __repr__(self):
         """Представление для разработчика."""
-        return self.rom_value if self.rom_value is not None else "None"
+        if self.rom_value is not None:
+            return self.rom_value
+        if self.int_value is not None:
+            return self.int_value
+        return None
