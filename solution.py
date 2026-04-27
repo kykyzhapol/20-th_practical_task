@@ -1,71 +1,120 @@
+"""
+Module containing several classes:
+
+- Circle: represents circles with area calculation and total area tracking.
+- NavalBattle: manages a simplified naval battle game (ship placement and shooting).
+- RomanNumber: represents Roman numerals with arithmetic operations and conversions.
+"""
+
 import random
+import re
 
 
 class Circle:
-    # Атрибуты класса
-    pi = 3.1415
-    all_circles = []  # список всех созданных экземпляров
+    """Represents a circle with a given radius."""
+
+    pi = 3.1415  # Approximate value of π
+    all_circles = []  # List of all created circle instances
 
     def __init__(self, radius=1):
-        """Инициализация круга с заданным радиусом (по умолчанию 1)."""
+        """
+        Initialize a circle with the specified radius.
+
+        Args:
+            radius: The radius of the circle (default 1).
+        """
         self.radius = radius
-        # Добавляем текущий экземпляр в общий список
+        # Add the new instance to the class-level list
         Circle.all_circles.append(self)
 
     def area(self):
-        """Возвращает площадь круга."""
+        """
+        Calculate the area of the circle.
+
+        Returns:
+            float: The area (π * radius²).
+        """
         return Circle.pi * (self.radius ** 2)
 
     @staticmethod
     def total_area():
-        """Возвращает суммарную площадь всех созданных кругов."""
+        """
+        Calculate the total area of all created circles.
+
+        Returns:
+            float: The sum of areas of all Circle instances.
+        """
         return sum(circle.area() for circle in Circle.all_circles)
 
     def __str__(self):
+        """Return the string representation of the circle's radius."""
         return str(self.radius)
 
     def __repr__(self):
+        """Return the representation (same as __str__ for simplicity)."""
         return str(self.radius)
 
 
 class NavalBattle:
-    # Атрибут класса: игровое поле 10x10, заполнено 0 (пусто)
+    """Simplified naval battle game with ship placement and shooting."""
+
+    # Class attribute: playing field 10x10, initially all zeros (empty)
     playing_field = [[0 for _ in range(10)] for _ in range(10)]
 
     def __init__(self, player_symbol):
-        """Игрок получает свой символ (например, 'X' или 'A') для отметки попаданий."""
+        """
+        Initialize a player with a symbol.
+
+        Args:
+            player_symbol: Character used to mark hits (e.g., 'X' or 'A').
+        """
         self.player_symbol = player_symbol
 
     @classmethod
     def new_game(cls):
-        """Очищает поле и случайным образом расставляет корабли."""
-        # Очищаем поле
+        """
+        Clear the field and randomly place ships.
+
+        Raises:
+            RuntimeError: If ships cannot be placed after many attempts.
+        """
+        # Clear the field
         cls.playing_field = [[0 for _ in range(10)] for _ in range(10)]
 
-        # Список кораблей: (размер, количество)
+        # Ship list: (size, count)
         ships = [(4, 1), (3, 2), (2, 3), (1, 4)]
 
-        # Функция проверки возможности размещения корабля
         def can_place(size, row, col, direction):
-            # direction: 0 – горизонталь, 1 – вертикаль
+            """
+            Check if a ship can be placed at given position.
+
+            Args:
+                size: Length of the ship.
+                row: Starting row index (0-9).
+                col: Starting column index (0-9).
+                direction: 0 = horizontal, 1 = vertical.
+
+            Returns:
+                bool: True if placement is valid, False otherwise.
+            """
             cells = []
-            if direction == 0:  # горизонтально
+            if direction == 0:  # horizontal
                 if col + size > 10:
                     return False
                 for c in range(col, col + size):
                     cells.append((row, c))
-            else:  # вертикально
+            else:  # vertical
                 if row + size > 10:
                     return False
                 for r in range(row, row + size):
                     cells.append((r, col))
 
-            # Проверяем каждую клетку корабля и её соседей
+            # Check each cell of the ship and its neighbours
             for r, c in cells:
-                # Сама клетка должна быть 0
+                # The cell itself must be empty (0)
                 if cls.playing_field[r][c] != 0:
                     return False
-                # Проверяем всех соседей (включая диагонали)
+                # Check all neighbours (including diagonals)
                 for dr in (-1, 0, 1):
                     for dc in (-1, 0, 1):
                         nr, nc = r + dr, c + dc
@@ -74,16 +123,16 @@ class NavalBattle:
                                 return False
             return True
 
-        # Размещаем корабли
+        # Place ships
         for size, count in ships:
             for _ in range(count):
                 placed = False
-                for attempt in range(1000):  # максимум попыток
+                for _ in range(1000):  # maximum attempts
                     row = random.randint(0, 9)
                     col = random.randint(0, 9)
                     direction = random.randint(0, 1)
                     if can_place(size, row, col, direction):
-                        # Размещаем корабль
+                        # Place the ship
                         if direction == 0:
                             for c in range(col, col + size):
                                 cls.playing_field[row][c] = 1
@@ -93,20 +142,26 @@ class NavalBattle:
                         placed = True
                         break
                 if not placed:
-                    raise RuntimeError("Не удалось расставить корабли, попробуйте снова.")
+                    raise RuntimeError("Failed to place ships, try again.")
 
     def shot(self, x, y):
         """
-        Выстрел по координатам (x, y), где x и y от 1 до 10.
-        Выводит результат: 'попал', 'мимо', 'ошибка' или 'игровое поле не заполнено'.
+        Perform a shot at coordinates (x, y), where x and y are from 1 to 10.
+
+        Prints the result: 'попал' (hit), 'мимо' (miss), 'ошибка' (error),
+        or 'игровое поле не заполнено' (field not initialised).
+
+        Args:
+            x: Column coordinate (1‑based).
+            y: Row coordinate (1‑based).
         """
-        # Проверяем, расставлены ли корабли (есть ли хотя бы одна 1)
+        # Check if ships are placed (any '1' exists)
         has_ships = any(1 in row for row in NavalBattle.playing_field)
         if not has_ships:
             print("игровое поле не заполнено")
             return
 
-        # Преобразуем координаты в индексы (0..9)
+        # Convert to zero‑based indices
         j, i = x - 1, y - 1
         if not (0 <= i < 10 and 0 <= j < 10):
             print("Координаты вне поля (допустимы 1..10)")
@@ -114,7 +169,7 @@ class NavalBattle:
 
         cell = NavalBattle.playing_field[i][j]
 
-        # Проверяем, не стреляли ли уже в эту клетку
+        # Check if this cell has already been shot
         if cell not in (0, 1):
             print("ошибка")
             return
@@ -126,28 +181,38 @@ class NavalBattle:
             print("мимо")
             NavalBattle.playing_field[i][j] = 'o'
 
-
     @staticmethod
     def show():
-        """Статический метод: выводит текущее состояние поля на экран."""
+        """
+        Print the current state of the playing field.
+
+        Ships (1) and empty cells (0) are shown as '~',
+        misses as 'o', and hits as the player's symbol.
+        """
         for row in NavalBattle.playing_field:
             line = []
             for cell in row:
                 if cell == 0 or cell == 1:
-                    # Клетка с кораблём (1) или пустая (0) – скрыта
+                    # Hidden cell: ship or water
                     line.append('~')
                 elif cell == 'o':
                     line.append('o')
                 else:
-                    # Любой другой символ – это отметка попадания игрока
+                    # Player's symbol (hit)
                     line.append(cell)
-            print(' '.join(line))  # можно выводить без пробелов, но так нагляднее
+            print(' '.join(line))
 
-
-import re
 
 class RomanNumber:
-    # Словарь для преобразования римских цифр в арабские
+    """
+    Represents a Roman numeral (1‑3999) with conversion to/from integer.
+
+    Supports arithmetic operations (+, -, *, /, //, %, **) with result
+    automatically converted back to a Roman numeral if within 1‑3999,
+    otherwise prints 'ошибка' and returns an error object.
+    """
+
+    # Mapping of Roman symbols to integer values
     roman_dict = {
         'I': 1,
         'V': 5,
@@ -160,78 +225,99 @@ class RomanNumber:
 
     def __init__(self, value):
         """
-        Инициализация:
-        - если value — строка с корректным римским числом, сохраняем в rom_value,
-          int_value вычисляем через decimal_number()
-        - если value — целое число от 1 до 3999, сохраняем в int_value,
-          rom_value вычисляем через roman_number()
-        - иначе выводим 'ошибка', соответствующий атрибут (rom_value или int_value) = None
+        Initialise a RomanNumber.
+
+        Args:
+            value: Either a string (Roman numeral), an integer (1‑3999), or None.
+                   If the value is invalid, prints 'ошибка' and sets both
+                   internal attributes to None.
         """
-        if isinstance(value, str) and self.is_roman(value):
+        if value is None:
+            self.rom_value = None
+            self.int_value = None
+        elif isinstance(value, str) and self.is_roman(value):
             self.rom_value = value.upper()
-            self.int_value = self.decimal_number()  # вычисляем из римской строки
+            self.int_value = self._to_int()
         elif isinstance(value, int) and self.is_int(value):
             self.int_value = value
-            self.rom_value = self.roman_number()    # вычисляем римскую строку из числа
+            self.rom_value = self._to_roman()
         else:
             print('ошибка')
             self.rom_value = None
             self.int_value = None
 
+    def _to_int(self):
+        """
+        Convert the internal Roman string to an integer.
+
+        Returns:
+            int or None: The integer value, or None if no Roman value.
+        """
+        if self.rom_value is None:
+            return None
+        total = 0
+        prev = 0
+        for ch in reversed(self.rom_value):
+            cur = self.roman_dict[ch]
+            if cur < prev:
+                total -= cur
+            else:
+                total += cur
+            prev = cur
+        return total
+
+    def _to_roman(self):
+        """
+        Convert the internal integer to a Roman string.
+
+        Returns:
+            str or None: The Roman numeral, or None if no integer value.
+        """
+        if self.int_value is None:
+            return None
+        num = self.int_value
+        # Value-symbol pairs in descending order
+        values = [
+            (1000, 'M'), (900, 'CM'), (500, 'D'), (400, 'CD'),
+            (100, 'C'), (90, 'XC'), (50, 'L'), (40, 'XL'),
+            (10, 'X'), (9, 'IX'), (5, 'V'), (4, 'IV'),
+            (1, 'I')
+        ]
+        result = []
+        for val, sym in values:
+            while num >= val:
+                result.append(sym)
+                num -= val
+        return ''.join(result)
+
     def decimal_number(self):
         """
-        Возвращает десятичный эквивалент:
-        - если объект создан из римского числа, возвращает int
-        - если создан из целого числа, возвращает это число
-        - если ошибка, возвращает None
+        Return the decimal integer equivalent.
+
+        Returns:
+            int or None: The integer value, or None if the object is invalid.
         """
-        if hasattr(self, 'int_value') and self.int_value is not None:
-            return self.int_value
-        if hasattr(self, 'rom_value') and self.rom_value is not None:
-            total = 0
-            prev_value = 0
-            for char in reversed(self.rom_value):
-                current_value = self.roman_dict[char]
-                if current_value < prev_value:
-                    total -= current_value
-                else:
-                    total += current_value
-                prev_value = current_value
-            return total
-        return None
+        return self.int_value
 
     def roman_number(self):
         """
-        Возвращает римскую строку:
-        - если объект создан из целого числа, возвращает строку
-        - если создан из римского числа, возвращает эту строку
-        - если ошибка, возвращает None
+        Return the Roman numeral string.
+
+        Returns:
+            str or None: The Roman string, or None if the object is invalid.
         """
-        if hasattr(self, 'rom_value') and self.rom_value is not None:
-            return self.rom_value
-        if hasattr(self, 'int_value') and self.int_value is not None:
-            num = self.int_value
-            if num < 1 or num > 3999:
-                return None
-            values = [
-                (1000, 'M'), (900, 'CM'), (500, 'D'), (400, 'CD'),
-                (100, 'C'), (90, 'XC'), (50, 'L'), (40, 'XL'),
-                (10, 'X'), (9, 'IX'), (5, 'V'), (4, 'IV'),
-                (1, 'I')
-            ]
-            result = []
-            for val, sym in values:
-                while num >= val:
-                    result.append(sym)
-                    num -= val
-            return ''.join(result)
-        return None
+        return self.rom_value
 
     @staticmethod
     def is_int(value):
         """
-        Статический метод. Возвращает True, если целое число value
-        можно представить римским числом (1..3999), иначе False.
+        Check if the value is a valid integer in the range 1‑3999.
+
+        Args:
+            value: Any value.
+
+        Returns:
+            bool: True if value can be converted to an int and is between 1 and 3999.
         """
         try:
             num = int(value)
@@ -242,16 +328,160 @@ class RomanNumber:
     @staticmethod
     def is_roman(value):
         """
-        Статический метод. Возвращает True, если строка value является
-        корректным римским числом (1..3999), иначе False.
+        Check if the string is a valid Roman numeral (1‑3999).
+
+        Args:
+            value: A string.
+
+        Returns:
+            bool: True if the string matches the Roman numeral pattern.
         """
         if not isinstance(value, str) or not value:
             return False
         pattern = r'^(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$'
         return bool(re.fullmatch(pattern, value.upper()))
 
+    @staticmethod
+    def _error_instance():
+        """
+        Create an error instance (both attributes None).
+
+        Returns:
+            RomanNumber: An object with rom_value = None and int_value = None.
+        """
+        err = RomanNumber.__new__(RomanNumber)
+        err.rom_value = None
+        err.int_value = None
+        return err
+
+    # ---------- Arithmetic operators ----------
+
+    def _check_operand(self, other):
+        """
+        Prepare operands for arithmetic operation.
+
+        Args:
+            other: The second operand (may be int, str, or RomanNumber).
+
+        Returns:
+            tuple: (self_int, other_int) or (None, None) if either operand is invalid.
+        """
+        if self.int_value is None:
+            return None, None
+        # Try to convert other to RomanNumber if it's not already one
+        if not isinstance(other, RomanNumber):
+            try:
+                other = RomanNumber(other)
+            except Exception:
+                return None, None
+        if other.int_value is None:
+            return None, None
+        return self.int_value, other.int_value
+
+    def _make_result(self, result_int):
+        """
+        Create a new RomanNumber from an integer result.
+
+        If the result is within 1‑3999, returns a valid RomanNumber.
+        Otherwise prints 'ошибка' and returns an error instance.
+
+        Args:
+            result_int: The integer result of an operation.
+
+        Returns:
+            RomanNumber: Valid result or error instance.
+        """
+        if result_int is not None and 1 <= result_int <= 3999:
+            return RomanNumber(result_int)
+        print('ошибка')
+        return RomanNumber._error_instance()
+
+    def __pow__(self, other):
+        a, b = self._check_operand(other)
+        if a is None or b is None:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        result = a ** b
+        return self._make_result(result)
+
+    def __rpow__(self, other):
+        # other ** self
+        tmp = RomanNumber(other) if not isinstance(other, RomanNumber) else other
+        return tmp ** self
+
+    def __add__(self, other):
+        a, b = self._check_operand(other)
+        if a is None or b is None:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        return self._make_result(a + b)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        a, b = self._check_operand(other)
+        if a is None or b is None:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        return self._make_result(a - b)
+
+    def __rsub__(self, other):
+        # other - self
+        tmp = RomanNumber(other) if not isinstance(other, RomanNumber) else other
+        return tmp - self
+
+    def __mul__(self, other):
+        a, b = self._check_operand(other)
+        if a is None or b is None:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        return self._make_result(a * b)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        a, b = self._check_operand(other)
+        if a is None or b is None or b == 0:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        # Only integer division allowed (must be exact)
+        if a % b != 0:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        return self._make_result(a // b)
+
+    def __rtruediv__(self, other):
+        # other / self
+        tmp = RomanNumber(other) if not isinstance(other, RomanNumber) else other
+        return tmp / self
+
+    def __floordiv__(self, other):
+        a, b = self._check_operand(other)
+        if a is None or b is None or b == 0:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        return self._make_result(a // b)
+
+    def __rfloordiv__(self, other):
+        tmp = RomanNumber(other) if not isinstance(other, RomanNumber) else other
+        return tmp // self
+
+    def __mod__(self, other):
+        a, b = self._check_operand(other)
+        if a is None or b is None or b == 0:
+            print('ошибка')
+            return RomanNumber._error_instance()
+        return self._make_result(a % b)
+
+    def __rmod__(self, other):
+        tmp = RomanNumber(other) if not isinstance(other, RomanNumber) else other
+        return tmp % self
+
+    # ---------- String representation ----------
     def __str__(self):
-        """Строковое представление: возвращает rom_value или int_value в виде строки, иначе 'None'."""
+        """Return the Roman string or the integer as string if available, else 'None'."""
         if self.rom_value is not None:
             return self.rom_value
         if self.int_value is not None:
@@ -259,9 +489,9 @@ class RomanNumber:
         return 'None'
 
     def __repr__(self):
-        """Представление для разработчика."""
+        """Return the representation (Roman string or integer, or None)."""
         if self.rom_value is not None:
             return self.rom_value
         if self.int_value is not None:
-            return self.int_value
+            return str(self.int_value)
         return None
